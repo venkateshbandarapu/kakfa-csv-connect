@@ -5,6 +5,9 @@ import com.opencsv.CSVReader;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -14,6 +17,8 @@ import java.util.*;
 import  static com.csv.connector.ConfigConstants.*;
 
 public class CSVSourceTask extends SourceTask {
+
+    Logger log=LoggerFactory.getLogger(CSVSourceTask.class);
     private Map<String, String> connectionProps;
     private ObjectMapper mapper;
 
@@ -24,12 +29,12 @@ public class CSVSourceTask extends SourceTask {
     public void start(Map<String, String> map) {
         this.connectionProps=map;
         this.mapper=new ObjectMapper();
-        System.out.println("com.csv.connector.CSVSourceTask..start() method with :"+map);
+        log.info("com.csv.connector.CSVSourceTask..start() method with :"+map);
     }
 
     public List<SourceRecord> poll() throws InterruptedException {
         Thread.sleep(11000);
-        System.out.println("com.csv.connector.CSVSourceTask..poll() method");
+        log.info("com.csv.connector.CSVSourceTask..poll() method");
         List<SourceRecord> processedRecords=new ArrayList<>();
        // this.context.offsetStorageReader().offset()
         Iterator<File> files=getFilesList().iterator();
@@ -39,10 +44,10 @@ public class CSVSourceTask extends SourceTask {
             try {
                 records = readCsvFile(file);
                 processedRecords.addAll(records);
-                System.out.println("processed the records for file:"+file.getName()+" so moving this file to "+this.connectionProps.get(FINISHED_FILE_PATH));
+                log.info("processed the records for file:"+file.getName()+" so moving this file to "+this.connectionProps.get(FINISHED_FILE_PATH));
                 FileUtils.MoveFile(file,this.connectionProps.get("finished.path"));
             } catch (IOException e) {
-                System.out.println("unable to read/open the file:"+file.getName()+" so moving this file to "+this.connectionProps.get(ERROR_FILE_PATH));
+                log.error("unable to read/open the file:"+file.getName()+" so moving this file to "+this.connectionProps.get(ERROR_FILE_PATH));
                 FileUtils.MoveFile(file,this.connectionProps.get(ERROR_FILE_PATH));
                 e.printStackTrace();
             }
@@ -72,27 +77,27 @@ public class CSVSourceTask extends SourceTask {
     }
     public List<SourceRecord> readCsvFile(File csvFile) throws IOException {
 
-        System.out.println("file name:"+csvFile);
+        log.info("file name:"+csvFile);
         boolean headerProcessed=false;
 
         List<SourceRecord> records=new ArrayList<>();
         CSVReader reader=new CSVReader(new FileReader(csvFile));
 
-            String[] row;//=reader.iterator();
+        String[] row;//=reader.iterator();
 
-                while ((row=reader.readNext())!=null){
-                if (!headerProcessed){
+        while ((row=reader.readNext())!=null){
+              if (!headerProcessed){
                     headerProcessed=true;
                     continue;
-                }
+              }
 
-                    Map<String,String> sourcePartition= new HashMap<>();
-                    sourcePartition.put("fileName",csvFile.getName());
+              Map<String,String> sourcePartition= new HashMap<>();
+              sourcePartition.put("fileName",csvFile.getName());
 
-                    Map<String,Long> sourceOffset= new HashMap<>();
-                    sourceOffset.put("offset",reader.getRecordsRead());
+              Map<String,Long> sourceOffset= new HashMap<>();
+              sourceOffset.put("offset",reader.getRecordsRead());
 
-                    Emp dto=new Emp(Integer.parseInt(row[0]),row[1],Double.parseDouble(row[2]));
+              Emp dto=new Emp(Integer.parseInt(row[0]),row[1],Double.parseDouble(row[2]));
 
                     SourceRecord record=new SourceRecord(sourcePartition,sourceOffset,
                             connectionProps.get(KAFKA_TOPIC_NAME),null,
@@ -100,9 +105,9 @@ public class CSVSourceTask extends SourceTask {
                             Schema.STRING_SCHEMA,convertObjectToString(dto));
                     records.add(record);
                // }
-            }
+         }
 
-           reader.close();
+        reader.close();
 
         return records;
 
