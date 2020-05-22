@@ -63,7 +63,7 @@ public class CSVSourceTask extends SourceTask {
             records = readCsvFile(file);
             log.info("processed the records for file:"+file.getName()+" so moving this file to "+this.connectionProps.get(FINISHED_FILE_PATH));
 
-        } catch (IOException|ArrayIndexOutOfBoundsException e) {
+        } catch (Exception e) {
             log.error("unable to process the file:"+file.getName()+" so moving this file to "+this.connectionProps.get(ERROR_FILE_PATH));
             try {
                 MoveFile(file,this.connectionProps.get(ERROR_FILE_PATH));
@@ -88,7 +88,7 @@ public class CSVSourceTask extends SourceTask {
         return records;
 
     }
-    public List<SourceRecord> readCsvFile(File csvFile) throws IOException,ArrayIndexOutOfBoundsException {
+    public List<SourceRecord> readCsvFile(File csvFile) throws Exception {
 
         log.info("file name:"+csvFile);
         boolean headerProcessed=false;
@@ -126,13 +126,11 @@ public class CSVSourceTask extends SourceTask {
         return records;
 
     }
-    public String convertObjectToString(Emp e){
+    public String convertObjectToString(Emp e) throws JsonProcessingException {
         String value = null;
-        try {
+
          value = mapper.writeValueAsString(e);
-        } catch (JsonProcessingException ex) {
-            ex.printStackTrace();
-        }
+
           return  value;
     }
 }
